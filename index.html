@@ -1,0 +1,495 @@
+<!doctype html>
+<html lang="en">
+  <head>
+    <meta charset="UTF-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+    <title>ASCII Streamer Pro</title>
+    <style>
+      /* --- RESET & BASICS --- */
+      * {
+        box-sizing: border-box;
+        margin: 0;
+        padding: 0;
+      }
+
+      body {
+        font-family: "Segoe UI", Tahoma, Geneva, Verdana, sans-serif;
+        background-color: #111;
+        color: #eee;
+        height: 100vh;
+        overflow: hidden; /* Prevent full page scroll */
+      }
+
+      /* --- LAYOUT GRID --- */
+      .app-container {
+        display: grid;
+        grid-template-columns: 340px 1fr; /* Sidebar | Main Stage */
+        height: 100vh;
+      }
+
+      /* --- SIDEBAR STYLING --- */
+      .sidebar {
+        background-color: #1a1a1a;
+        border-right: 1px solid #333;
+        padding: 20px;
+        display: flex;
+        flex-direction: column;
+        gap: 20px;
+        overflow-y: auto;
+        z-index: 20; /* Above scanlines */
+      }
+
+      .logo {
+        font-size: 1.2rem;
+        font-weight: bold;
+        color: #33ff33;
+        letter-spacing: 2px;
+      }
+
+      /* Controls Group */
+      .control-group {
+        display: flex;
+        flex-direction: column;
+        gap: 10px;
+      }
+
+      input[type="text"] {
+        background: #222;
+        border: 1px solid #444;
+        color: white;
+        padding: 10px;
+        border-radius: 4px;
+        outline: none;
+      }
+      input[type="text"]:focus {
+        border-color: #33ff33;
+      }
+
+      button.primary-btn {
+        background: #33ff33;
+        color: #000;
+        border: none;
+        padding: 10px;
+        font-weight: bold;
+        cursor: pointer;
+        border-radius: 4px;
+        text-transform: uppercase;
+        transition: opacity 0.2s;
+      }
+      button.primary-btn:hover {
+        opacity: 0.8;
+      }
+
+      /* Thumbnails Grid */
+      .thumbnails-container {
+        flex-grow: 1; /* Takes available space */
+        min-height: 100px;
+        background: #000;
+        border: 1px solid #333;
+        border-radius: 4px;
+        padding: 10px;
+        overflow-y: auto;
+      }
+      .thumbnails-grid {
+        display: grid;
+        grid-template-columns: repeat(3, 1fr);
+        gap: 5px;
+      }
+      .thumbnails-grid img {
+        width: 100%;
+        height: 60px;
+        object-fit: cover;
+        border-radius: 4px;
+        cursor: pointer;
+        opacity: 0.7;
+        border: 2px solid transparent;
+      }
+      .thumbnails-grid img:hover,
+      .thumbnails-grid img.selected {
+        opacity: 1;
+        border-color: #33ff33;
+      }
+
+      /* Original Preview */
+      .preview-box img {
+        width: 100%;
+        height: auto;
+        border-radius: 4px;
+        border: 1px solid #444;
+        background: #000;
+      }
+
+      /* Toggles */
+      .toggle-row {
+        display: flex;
+        justify-content: space-between;
+        align-items: center;
+        font-size: 0.9rem;
+      }
+
+      /* --- MAIN STAGE STYLING --- */
+      .main-stage {
+        position: relative;
+        background-color: #0d0d0d;
+        display: flex;
+        align-items: center;
+        justify-content: center;
+        overflow: hidden;
+      }
+
+      #stage {
+        font-family: "Courier New", monospace;
+        font-size: 8px; /* Tiny font for resolution */
+        line-height: 8px;
+        white-space: pre;
+        color: #eee;
+        /* Scale it so it fits nicely */
+        transform: scale(0.9);
+        transform-origin: center;
+      }
+
+      /* --- CRT EFFECT LAYERS --- */
+      .scanlines {
+        pointer-events: none;
+        position: absolute; /* Relative to main-stage */
+        top: 0;
+        left: 0;
+        width: 100%;
+        height: 100%;
+        z-index: 10;
+        background: linear-gradient(
+          to bottom,
+          rgba(255, 255, 255, 0),
+          rgba(255, 255, 255, 0) 50%,
+          rgba(0, 0, 0, 0.2) 50%,
+          rgba(0, 0, 0, 0.2)
+        );
+        background-size: 100% 4px;
+        opacity: 0;
+        transition: opacity 0.3s;
+      }
+
+      /* CRT Activated State */
+      body.crt-active #stage {
+        color: #33ff33;
+        text-shadow: 0 0 5px #33ff33;
+      }
+      body.crt-active .scanlines {
+        opacity: 1;
+      }
+
+      /* Screen Flicker Animation */
+      @keyframes flicker {
+        0% {
+          opacity: 0.97;
+        }
+        5% {
+          opacity: 0.95;
+        }
+        10% {
+          opacity: 0.9;
+        }
+        15% {
+          opacity: 0.95;
+        }
+        20% {
+          opacity: 1;
+        }
+        50% {
+          opacity: 0.95;
+        }
+        55% {
+          opacity: 0.98;
+        }
+        60% {
+          opacity: 0.9;
+        }
+        80% {
+          opacity: 0.96;
+        }
+        100% {
+          opacity: 1;
+        }
+      }
+      body.crt-active .main-stage::after {
+        content: " ";
+        display: block;
+        position: absolute;
+        top: 0;
+        left: 0;
+        bottom: 0;
+        right: 0;
+        background: rgba(18, 16, 16, 0.1);
+        opacity: 0;
+        z-index: 10;
+        pointer-events: none;
+        animation: flicker 0.15s infinite;
+      }
+    </style>
+  </head>
+  <body>
+    <div class="app-container">
+      <aside class="sidebar">
+        <div class="logo">>_ ASCII_STREAM</div>
+
+        <div class="control-group">
+          <label>Search Giphy</label>
+          <div style="display: flex; gap: 5px">
+            <input
+              id="prompt"
+              type="text"
+              placeholder="e.g. glitch, cat, matrix"
+              value=""
+            />
+            <button class="primary-btn" onclick="startStream()">GO</button>
+          </div>
+        </div>
+
+        <div class="control-group" style="flex: 1; min-height: 0">
+          <label>Results</label>
+          <div class="thumbnails-container">
+            <div id="gifList" class="thumbnails-grid">
+              <div
+                style="
+                  grid-column: 1/-1;
+                  text-align: center;
+                  color: #666;
+                  padding: 20px;
+                "
+              >
+                Enter a prompt...
+              </div>
+            </div>
+          </div>
+        </div>
+
+        <div
+          class="control-group preview-box"
+          style="
+            background: #181818;
+            border-radius: 6px;
+            padding: 10px;
+            border: 1px solid #333;
+          "
+        >
+          <label>Source GIF</label>
+          <div
+            style="
+              width: 100%;
+              aspect-ratio: 4/3;
+              display: flex;
+              align-items: center;
+              justify-content: center;
+              background: #000;
+              border-radius: 4px;
+              overflow: hidden;
+            "
+          >
+            <img
+              id="originalGif"
+              src=""
+              alt="Preview"
+              style="
+                max-width: 100%;
+                max-height: 100%;
+                object-fit: contain;
+                display: block;
+                margin: auto;
+                background: #000;
+                border-radius: 4px;
+              "
+            />
+          </div>
+        </div>
+
+        <div class="control-group">
+          <div class="toggle-row">
+            <span>Invert Colors</span>
+            <input type="checkbox" id="invert" onchange="reconvertAscii()" />
+          </div>
+          <div class="toggle-row">
+            <span>CRT Retro Mode</span>
+            <input type="checkbox" id="crtToggle" onchange="toggleCRT()" />
+          </div>
+        </div>
+
+        <div class="control-group">
+          <label for="charset">ASCII Texture</label>
+          <select
+            id="charset"
+            style="margin-bottom: 10px"
+            onchange="reconvertAscii()"
+          >
+            <option value="standard">Standard (@%#*+=-:. )</option>
+            <option value="binary">Binary (01)</option>
+            <option value="blocks">Blocks (█▓▒░ )</option>
+          </select>
+        </div>
+      </aside>
+
+      <main class="main-stage">
+        <div id="scanlines" class="scanlines"></div>
+        <div id="stage">READY...</div>
+      </main>
+    </div>
+
+    <script>
+      let intervalId = null;
+      let asciiFrames = [];
+      let frameIndex = 0;
+      let selectedGifUrl = "";
+      let isStreaming = false;
+
+      // --- 1. SEARCH & FETCH LIST ---
+      function startStream() {
+        const prompt = document.getElementById("prompt").value.trim();
+        const listDiv = document.getElementById("gifList");
+
+        if (!prompt) {
+          listDiv.innerHTML =
+            '<div style="color:red; grid-column:1/-1;">Please enter a prompt above.</div>';
+          return;
+        }
+
+        listDiv.innerHTML =
+          '<div style="color:#888; grid-column:1/-1;">Searching...</div>';
+
+        // Point to your Flask Backend
+        fetch(
+          `http://127.0.0.1:5000/gif_list?prompt=${encodeURIComponent(prompt)}`,
+        )
+          .then((r) => r.json())
+          .then((data) => {
+            listDiv.innerHTML = ""; // Clear loading
+
+            if (data.gifs && data.gifs.length > 0) {
+              data.gifs.forEach((url) => {
+                const img = document.createElement("img");
+                img.src = url;
+                img.onclick = () => selectGif(url, img);
+                listDiv.appendChild(img);
+              });
+              // Auto-select first
+              selectGif(data.gifs[0], listDiv.firstChild);
+            } else {
+              listDiv.innerHTML =
+                '<div style="color:red; grid-column:1/-1;">No results found.</div>';
+            }
+          })
+          .catch((err) => {
+            listDiv.innerHTML = `<div style="color:red; grid-column:1/-1;">Error: ${err}</div>`;
+          });
+      }
+
+      // --- 2. SELECT & PREVIEW ---
+      function selectGif(url, imgElement) {
+        selectedGifUrl = url;
+        document.getElementById("originalGif").src = url;
+
+        // Highlight selected thumbnail
+        document
+          .querySelectorAll(".thumbnails-grid img")
+          .forEach((i) => i.classList.remove("selected"));
+        if (imgElement) imgElement.classList.add("selected");
+
+        reconvertAscii();
+      }
+
+      // --- 3. STREAM ASCII ---
+      function reconvertAscii() {
+        if (!selectedGifUrl || isStreaming) return;
+        isStreaming = true;
+
+        // Disable controls while streaming
+        const invertElem = document.getElementById("invert");
+        if (invertElem) invertElem.disabled = true;
+        const crtElem = document.getElementById("crtToggle");
+        if (crtElem) crtElem.disabled = true;
+        const charsetElem = document.getElementById("charset");
+        const charset = charsetElem ? charsetElem.value : "standard";
+
+        if (intervalId) clearInterval(intervalId);
+        asciiFrames = [];
+        frameIndex = 0;
+
+        const stage = document.getElementById("stage");
+        stage.textContent = "BUFFERING...";
+
+        const invert = document.getElementById("invert").checked;
+
+        fetch(
+          `http://127.0.0.1:5000/stream?invert=${invert}&charset=${charset}`,
+          {
+            method: "POST",
+            headers: { "Content-Type": "application/json" },
+            body: JSON.stringify({ prompt: selectedGifUrl }), // Sending URL as prompt for direct processing
+          },
+        ).then((response) => {
+          if (!response.ok) {
+            response.text().then((msg) => {
+              stage.textContent = `Error: ${msg}`;
+            });
+            isStreaming = false;
+            if (invertElem) invertElem.disabled = false;
+            if (crtElem) crtElem.disabled = false;
+            if (charsetElem) charsetElem.disabled = false;
+            return;
+          }
+          const reader = response.body.getReader();
+          const decoder = new TextDecoder();
+          let buffer = "";
+
+          function read() {
+            reader.read().then(({ done, value }) => {
+              if (value) {
+                buffer += decoder.decode(value, { stream: true });
+                // Split by our custom delimiter (\n---END---\n)
+                let parts = buffer.split("\n---END---\n");
+                buffer = parts.pop(); // Keep incomplete chunk
+
+                parts.forEach((part) => {
+                  if (part.startsWith("data: ")) {
+                    // No JSON.parse! ASCII art is plain text
+                    const ascii = part.substring(6);
+                    asciiFrames.push(ascii);
+                    // Show first frame immediately for responsiveness
+                    if (asciiFrames.length === 1) stage.textContent = ascii;
+                  }
+                });
+              }
+
+              if (done) {
+                // Start Animation Loop
+                isStreaming = false;
+                if (invertElem) invertElem.disabled = false;
+                if (crtElem) crtElem.disabled = false;
+                if (charsetElem) charsetElem.disabled = false;
+                if (asciiFrames.length > 0) {
+                  intervalId = setInterval(() => {
+                    stage.textContent = asciiFrames[frameIndex];
+                    frameIndex = (frameIndex + 1) % asciiFrames.length;
+                  }, 100); // 100ms = 10fps
+                } else {
+                  stage.textContent = "Failed to load frames.";
+                }
+                return;
+              }
+              read();
+            });
+          }
+          read();
+        });
+      }
+
+      // --- 4. VISUAL EFFECTS ---
+      function toggleCRT() {
+        const isChecked = document.getElementById("crtToggle").checked;
+        if (isChecked) {
+          document.body.classList.add("crt-active");
+        } else {
+          document.body.classList.remove("crt-active");
+        }
+      }
+    </script>
+  </body>
+</html>
