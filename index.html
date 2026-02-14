@@ -356,7 +356,7 @@
 
         // Point to your Flask Backend
         fetch(
-          `http://127.0.0.1:5000/gif_list?prompt=${encodeURIComponent(prompt)}`,
+          `https://ascii-gif-generator.onrender.com/gif_list?prompt=${encodeURIComponent(prompt)}`,
         )
           .then((r) => r.json())
           .then((data) => {
@@ -418,7 +418,7 @@
         const invert = document.getElementById("invert").checked;
 
         fetch(
-          `http://127.0.0.1:5000/stream?invert=${invert}&charset=${charset}`,
+          `https://ascii-gif-generator.onrender.com/stream?invert=${invert}&charset=${charset}`,
           {
             method: "POST",
             headers: { "Content-Type": "application/json" },
