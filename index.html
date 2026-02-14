@@ -5,6 +5,17 @@
     <meta name="viewport" content="width=device-width, initial-scale=1.0" />
     <title>ASCII Streamer Pro</title>
     <style>
+      @keyframes rainbow-cycle {
+        0% {
+          filter: hue-rotate(0deg);
+        }
+        100% {
+          filter: hue-rotate(360deg);
+        }
+      }
+      #stage.rainbow-active {
+        animation: rainbow-cycle 2s linear infinite;
+      }
       /* --- RESET & BASICS --- */
       * {
         box-sizing: border-box;
@@ -177,6 +188,10 @@
       body.crt-active .scanlines {
         opacity: 1;
       }
+      #stage.rainbow-active {
+        color: #33ff33;
+        animation: rainbow-cycle 2s linear infinite;
+      }
 
       /* Screen Flicker Animation */
       @keyframes flicker {
@@ -311,6 +326,24 @@
             <span>CRT Retro Mode</span>
             <input type="checkbox" id="crtToggle" onchange="toggleCRT()" />
           </div>
+          <div class="toggle-row">
+            <span>Rainbow Mode</span>
+            <input
+              type="checkbox"
+              id="rainbowToggle"
+              onchange="toggleRainbow()"
+            />
+          </div>
+          <script>
+            function toggleRainbow() {
+              document
+                .getElementById("stage")
+                .classList.toggle(
+                  "rainbow-active",
+                  document.getElementById("rainbowToggle").checked,
+                );
+            }
+          </script>
         </div>
 
         <div class="control-group">

@@ -1,0 +1,62 @@
+## AI Models/Tool Used & Key Prompts
+
+### AI Models/Tools Used
+- **Gemini Pro**: Planning code, writing prompts, feature feasibility, and feature selection.
+- **Copilot (GPT-4.1)**: Generating code based on prompts, implementing features.
+
+---
+
+### Key Prompts
+
+**1. Initial Project Setup**
+After discussing the project goals, I asked Gemini:
+
+> Could you give me a prompt to start implementing this in my folder?
+
+I then used this output as the initial design prompt for Copilot:
+
+---
+I am building a Streaming ASCII GIF Generator for a school assignment. I need you to generate the complete file structure and code for a Python Flask backend and a simple HTML frontend.
+
+**Project Requirements:**
+- **Goal:** The user types a prompt (e.g., 'cat'). The backend searches Giphy (or Tenor as a backup), downloads the GIF, converts it to ASCII art frame-by-frame, and streams it back to the frontend.
+- **Tech Stack:** Python (Flask), requests, Pillow (PIL), and flask-cors.
+- **Streaming:** Use Server-Sent Events (SSE). The backend must yield frames one by one using a Python generator.
+- **Fixes:** Include stream_with_context and set X-Accel-Buffering: no headers to prevent 406 errors on Render.
+- **Security:** Do NOT hardcode API keys. Use os.environ.get('GIPHY_API_KEY').
+
+**Please output the following files:**
+- app.py (The Flask backend with the SSE generator logic).
+- requirements.txt (For deployment to Render).
+- index.html (The frontend with EventSource to listen to the stream).
+- README.md (Explaining how to run it and set environment variables).
+
+Assume I have my Giphy/Tenor keys ready.
+---
+
+**2. UI/UX Enhancement**
+To improve the frontend appearance, I used this prompt:
+
+> I have a simple HTML/JS frontend for an ASCII art generator. I want to make it look like a retro 1980s CRT monitor.
+>
+> Please provide the CSS and HTML updates to:
+> - Make the background black (#0d0d0d) and the text bright green (#33ff33).
+> - Add a text-shadow 'glow' effect to the ASCII characters.
+> - Create a 'scanline' overlay using a CSS linear gradient that covers the screen but lets clicks pass through (pointer-events: none).
+> - Add a subtle 'flicker' animation to the entire page.
+> - Keep the existing #stage div where the ASCII art goes.
+> - Make this be a toggleable option.
+
+**3. Feature Additions (Incremental Prompts)**
+A series of prompts were used to add more features:
+
+- **Charset Selection:**
+  - Backend (app.py): Create 3 lists: STANDARD (@%#), BINARY (01), and BLOCKS (█▓▒░). Update the /stream route to accept a ?charset= parameter and use the correct list.
+  - Frontend: Add a <select> dropdown in the sidebar with these options. Pass the value in the URL when starting the stream.
+  - Take time to ensure all of these are implemented correctly without breaking any current implementations. Ask questions if needed.
+
+- **Invert Option:**
+  - I want to add an 'Invert' checkbox to my ASCII generator.
+    1. Frontend: Add a checkbox <input type='checkbox' id='invert'>. Send &invert=true (or false) in the URL query string when the stream starts.
+    2. Backend: In app.py, read the invert parameter. If true, reverse the ASCII_CHARS list (e.g., chars[::-1]) before generating the frame. Provide the updated Python function for stream() and the HTML input.
+

@@ -1,64 +1,57 @@
-# Streaming ASCII GIF Generator
+## Backend API Endpoints
 
-## Overview
+### `/stream` (GET/POST)
 
-This project streams ASCII art versions of GIFs from Giphy (or Tenor) to the frontend using Server-Sent Events (SSE).
+- Streams ASCII art frames from a GIF.
+- **Parameters:**
+  - `prompt` (string, required): Search term or direct GIF URL (POST JSON or GET query)
+  - `invert` (bool, optional): Invert ASCII charset (default: false)
+  - `charset` (string, optional): ASCII charset to use (`standard`, `binary`, `blocks`; default: `standard`)
+- **Returns:**
+  - `text/event-stream` with ASCII art frames, separated by `---END---`.
 
-## Features
+These results are not cached, every stream will refetch the gif_url even if its the same.
+For example, selecting a filter will refetch the url with the parameter
 
-- User enters a prompt (e.g., 'cat')
-- Backend searches Giphy (or Tenor as backup)
-- Downloads GIF, converts frames to ASCII art
-- Streams ASCII frames to frontend in real time
+### `/gif_url` (GET)
 
-## Tech Stack
+- Returns a single GIF URL for a search prompt.
+- **Parameters:**
+  - `prompt` (string, required): Search term.
+- **Returns:**
+  - `{ "url": <gif_url> }` or 404 if not found.
 
-- Python (Flask)
-- requests
-- Pillow (PIL)
-- flask-cors
+### `/gif_list` (GET)
 
-## Setup
+- Returns a list of GIF URLs for a search prompt.
+- **Parameters:**
+  - `prompt` (string, required): Search term.
+- **Returns:**
+  - `{ "gifs": [<gif_url>, ...] }` or 400/502 on error.
 
-1. **Clone the repo**
-2. **Install dependencies:**
-   ```bash
-   pip install -r requirements.txt
-   ```
-3. **Set environment variables:**
-   - For Giphy: `GIPHY_API_KEY`
-   - For Tenor: `TENOR_API_KEY`
-   - Example (Windows):
-     ```powershell
-     $env:GIPHY_API_KEY="your_giphy_key"
-     $env:TENOR_API_KEY="your_tenor_key"
-     ```
-   - Example (Linux/macOS):
-     ```bash
-     export GIPHY_API_KEY=your_giphy_key
-     export TENOR_API_KEY=your_tenor_key
-     ```
+### `/` (GET)
 
-4. **Run the backend:**
+- Health check endpoint. Returns a simple status message.
 
-   ```bash
-   python app.py
-   ```
+## Frontend Communication
 
-5. **Open `index.html` in your browser.**
-   - Or deploy both files to Render and set environment variables in Render's dashboard.
+- The frontend calls `/gif_list` to search for GIFs and display thumbnails.
+- When a GIF is selected, the frontend calls `/stream` (POST) with the GIF URL to receive a stream of ASCII art frames for display.
+- The frontend may also call `/gif_url` for a single GIF result.
 
-## Notes
+## Environment Variables & Secrets
 
-- API keys are NOT hardcoded. Set them as environment variables.
-- SSE streaming uses `stream_with_context` and disables buffering with `X-Accel-Buffering: no`.
-- If Giphy fails, Tenor is used as backup.
+- The backend loads secrets from `secrets.txt` (locally) or environment variables (in production, e.g., Render dashboard).
+- **API keys and secrets are never exposed to the frontend or committed to version control.**
+- The `.gitignore` file ensures `secrets.txt` is not tracked.
 
-## Troubleshooting
+## Authentication & Security
+- No user authentication is implemented (public API for demo purposes).
+- All API keys (e.g., GIPHY) are stored securely on the backend and never sent to the frontend.
 
-- If you get 406 errors on Render, make sure `X-Accel-Buffering: no` is set in response headers.
-- If GIFs don't appear, check your API keys and internet connection.
+---
 
-## License
 
-MIT
+
+
+
